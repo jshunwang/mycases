@@ -1,18 +1,17 @@
 /*================================================================
 *   Copyright (C) 2017 Sangfor Ltd. All rights reserved.
 *   
-*   文件名称：thrlist.h
+*   文件名称：thrchn.h
 *   创 建 者：jshunwang
-*   创建日期：2017年12月01日
+*   创建日期：2017年12月03日
 *   描    述：
-*
+*			
 ================================================================*/
 
-#ifndef __THRLIST_H
-#define __THRLIST_h
+#ifndef __MEDIALIB_H
+#define __MEDIALIB_H
 
-#define MUSICSPATH "../musiclib"
-	
+int thr_data(chnid_t chnid);
+
 
 #endif
-
