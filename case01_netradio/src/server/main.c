@@ -21,6 +21,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <net/if.h>
+#include <pthread.h>
+#include <sched.h>
 #include "medialib.h"
 #include "thrchn.h"
 #include "thrlist.h"
@@ -28,9 +30,9 @@
 #include "protocol.h"
 
 
+
 int sd;
 struct sockaddr_in raddr;
-
 
 int main(void)
 {
@@ -96,12 +98,15 @@ int main(void)
 #endif
 
 #if 1
-//	for(chnid_t i = 1; i <= chnnr; i++){
-			
-		thr_data(1);
-//	}
+	chnid_t i;
+	for( i = 0; i <= 2; i++){
+		if(i == 0){
+			thr_list();
+		}else {
+			thr_songdata(i);
+		}
+	}
 
-	while(1)
 		pause();
 #endif
 	pause();

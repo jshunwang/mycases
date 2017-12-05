@@ -2,14 +2,22 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/udp.h>
 #include <string.h>
 #include <unistd.h>
 #include <net/if.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 
 #include "protocol.h"
+
+void handler_nothing(int s)
+{
+
+}
 
 int main(void)
 {
@@ -18,7 +26,12 @@ int main(void)
 	socklen_t raddrlen;
 	void *rcvbuf = NULL;
 	int cnt;
-	char choice = 1;
+	char choice = -1;
+	int pfd[2] = {};
+	int pid;
+
+	int fd_test;
+	fd_test = open("./test.mp3", O_RDWR | O_CREAT | O_TRUNC, 666);
 
 	sd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sd < 0) {
@@ -55,6 +68,26 @@ int main(void)
 	}
 
 	raddrlen = sizeof(remoteaddr);
+
+	if(pipe(pfd) < 0){
+		perror("pipe()");	
+		close(sd);
+		exit(1);
+	}
+	signal(SIGUSR1, handler_nothing);
+	pid = fork();
+	if(pid == 0 ){
+		pause();
+		close(pfd[1]);	
+		dup2(pfd[0], 0);
+		execl("/bin/sh","sh", "-c", "mplayer - -cache 10240", NULL);
+		perror("execl()");
+		exit(1);
+	}
+
+	close(pfd[0]);
+
+		
 	while (1) {
 		memset(rcvbuf, '\0', 512);
 		if ((cnt = recvfrom(sd, rcvbuf, 512, 0, (void *)&remoteaddr, &raddrlen)) < 0) {
@@ -62,32 +95,51 @@ int main(void)
 			goto RECVERROR;
 		}
 
-		printf("successfully recv %d bytes\n", cnt);
-		printf("aaa%d\n",((msg_t *)rcvbuf)->chnid);
+	//	printf("successfully recv %d bytes\n", cnt);
+	//	printf("aaa%d\n",((msg_t *)rcvbuf)->chnid);
 	
 		if (((msg_t *)rcvbuf)->chnid == 0){
 
-			int pos=1;
-			for(int i =0; i < 10; i++){
-				printf("intdex%d\n",i);
-				printf("%d\n",((struct listentry_st *)(rcvbuf+pos))->chnid);	
-				printf("%d\n",((struct listentry_st *)(rcvbuf+pos))->len);	
-				printf("%s\n",((struct listentry_st *)(rcvbuf+pos))->descr);	
-				pos +=(((struct listentry_st *)(rcvbuf + pos))->len);
-			}	
-			
-		//	choice = getchar();
+			if(choice < 0){
+				int pos=1;
+				for(int i =0; i < 10; i++){
+				//	printf("intdex%d\n",i);
+					printf("%d: ",((struct listentry_st *)(rcvbuf+pos))->chnid);	
+				//	printf("%d\n",((struct listentry_st *)(rcvbuf+pos))->len);	
+					printf("%s",((struct listentry_st *)(rcvbuf+pos))->descr);	
+					pos +=(((struct listentry_st *)(rcvbuf + pos))->len);
+				}	
 
+				printf("\n");
+				printf("输入频道编号：");
+				choice = getchar()-'0';
+				kill(pid,SIGUSR1);
+			}
 			continue;
 		}else if(((msg_t *)rcvbuf)->chnid > 0){
 			if(((msg_t *)rcvbuf)->chnid == choice){
+#if 0 
+				printf("^hah^^%d^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n",\
+					((msg_t *)rcvbuf)->chnid );
 				
-				write(1, (rcvbuf+1), 511);
-			}		
-		}
+				write(1, (rcvbuf+1), cnt);
+				printf("\n");
 
+#endif	
+#if 1
+				write(fd_test, (rcvbuf+1), cnt-1);
+
+				
+#endif
+				write(pfd[1], (rcvbuf+1), cnt-1);
+			}	
+		}
+		
+		usleep(10);
 	}
 
+	wait(NULL);
+	close(pfd[1]);
 	close(sd);
 	free(rcvbuf);
 

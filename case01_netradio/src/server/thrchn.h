@@ -11,7 +11,9 @@
 #ifndef __MEDIALIB_H
 #define __MEDIALIB_H
 
-int thr_data(chnid_t chnid);
+#include "datatype.h"
+
+int thr_songdata(chnid_t chnid);
 
 
 #endif

@@ -15,15 +15,17 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <pthread.h>
+#include <sched.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include "datatype.h"
 #include "protocol.h"
 #include "medialib.h"
+#include "thrlist.h"
 	
 extern int sd;
 extern struct sockaddr_in raddr;
-
+pthread_mutex_t mut_senddata = PTHREAD_MUTEX_INITIALIZER;
 
 
 static void *thr_job(void *s)
@@ -85,14 +87,18 @@ static void *thr_job(void *s)
 			pos +=(((struct listentry_st *)(listbuff + pos))->len);
 		}		
 #endif
+		pthread_mutex_lock(&mut_senddata);
 		
 		if ((sendto(sd, listbuff, 512, 0, (void *)&raddr, sizeof(raddr))) < 0) {
 			perror("sendto()");
 			exit(1);
 		}
 
+		pthread_mutex_unlock(&mut_senddata);
+		printf("send list$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n");
+		sched_yield();
 
-		sleep(1);	
+		usleep(100000);	
 	}
 	
 	freechn_list(list, &chnnr);

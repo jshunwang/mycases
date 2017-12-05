@@ -89,6 +89,36 @@ int freechn_list(mlib_t **m, const int *chnn)
 
 ssize_t readchn_data(chnid_t chnid, void *buf, size_t size)
 {
+	//test code
+	int cnt_r;
+	int fd;
+	static off_t offset1 = 0;
+	static off_t offset2 = 0;
+
+
+	if(chnid == 1){
+		fd = open("/home/jsw/share/gitrepo/mycases/case01_netradio/src/musiclib/music_ch01/0b海阔天空.mp3",O_RDONLY );
+		cnt_r= pread(fd, buf, size, offset1);
+		offset1 += cnt_r;
+		if(cnt_r < size){
+			offset1 = 0;	
+		}
+	}else if(chnid == 2){
+		fd = open("/home/jsw/share/gitrepo/mycases/case01_netradio/src/musiclib/music_ch02/a千年之恋.mp3",O_RDONLY);
+		//fd = open("/etc/passwd",O_RDONLY);
+		cnt_r= pread(fd, buf, size, offset2);
+		offset2 += cnt_r;
+		if(cnt_r < size){
+			offset2 = 0;	
+		}
+	}
+	close(fd);
+
+
+
+
+
+#if 0
 	int pathlen;
 	char mediamp3_path[512] = {};
 	glob_t mp3pathbuff;
@@ -115,23 +145,27 @@ ssize_t readchn_data(chnid_t chnid, void *buf, size_t size)
 		puts((mp3pathbuff.gl_pathv)[i]);
 	}
 #endif
+	
 	path_chn = opendir(mp3pathbuff.gl_pathv[chnid-1]);
 	if(NULL == path_chn){
 		perror("pendir");
 		exit(1);	
 	}
 	while(1){
+	//	printf("%ld\n",pos_dir);
+	//	sleep(1);
 		seekdir(path_chn, pos_dir);
-		errno = 0;
 		readf_curr = readdir(path_chn);	
+		errno = 0;
 		if(NULL == readf_curr && errno == 0){
 			rewinddir(path_chn);
 			pos_dir = 0;
+	//	puts((mp3pathbuff.gl_pathv)[chnid-1]);
 			continue;	
 		}
-		
-		
-		if(NULL != strstr(readf_curr->d_name,".mp3")){
+			
+		if(NULL != strstr(readf_curr->d_name,"mp3")){
+			printf("%s\n",readf_curr->d_name);
 			strcpy(songpath, mp3pathbuff.gl_pathv[chnid-1]);
 			strcat(songpath, "/");
 			strcat(songpath, readf_curr->d_name);
@@ -141,6 +175,7 @@ ssize_t readchn_data(chnid_t chnid, void *buf, size_t size)
 				exit(1);
 			}
 			while(1){
+			//	printf("pos_mp3:%ld\n", pos_mp3);
 				lseek(fd_r, pos_mp3, SEEK_SET);
 				cnt_r = read(fd_r, song_buf, size);	
 				close(fd_r);
@@ -166,7 +201,7 @@ ssize_t readchn_data(chnid_t chnid, void *buf, size_t size)
 	}
 	closedir(path_chn);
 	
-
+#endif
 	return	cnt_r;
 
 ERROR1:
