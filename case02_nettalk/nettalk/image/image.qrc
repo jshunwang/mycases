@@ -1,0 +1,23 @@
+<RCC>
+    <qresource prefix="/new/prefix1">
+        <file>csky10.jpg</file>
+        <file>csky09.jpg</file>
+        <file>csky08.jpg</file>
+        <file>csky07.jpg</file>
+        <file>csky06.jpg</file>
+        <file>csky05.jpg</file>
+        <file>csky04.jpg</file>
+        <file>csky03.jpg</file>
+        <file>csky02.jpg</file>
+        <file>csky01.jpg</file>
+        <file>dog01.png</file>
+        <file>dog02.png</file>
+        <file>dog01_72.png</file>
+        <file>config_set_96.png</file>
+        <file>Add_group_96.png</file>
+        <file>microphone_96t.png</file>
+        <file>folder_96.png</file>
+        <file>Send_96.png</file>
+        <file>email_96.png</file>
+    </qresource>
+</RCC>
