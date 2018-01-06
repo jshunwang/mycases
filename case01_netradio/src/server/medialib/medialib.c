@@ -39,8 +39,16 @@ struct channle_song_pathname_st {
 }__attribute__((packed)); 
 typedef struct channle_song_pathname_st cspath_st;
 
+//readchannle时标记当前位置
+struct channle_posistion_st {
+	short songid;
+	off_t pos;
+}__attribute__((packed));
+typedef struct channle_posistion_st chn_pos_st;
+
 static cspath_st chnpathnames[MAXCHNNUM] = {};
 static int chnnum = 0;
+static chn_pos_st cur_pos[MAXCHNNUM] = {0};//各个频道当前read的位置，数组成员下标加1是频道号
 
 #if 1
 /********************main function for test**********************/
@@ -48,7 +56,9 @@ int main(void)
 {
 	int i, j;
 	int ret;
+	int fd;
 	char buf_descr[DESCRSIZE] = {}; 
+	char buf_song[DESCRSIZE] = {};
 
 	//打印频道路径信息和歌曲路径信息
 	printf("*******************************test01***********************************\n");
@@ -75,6 +85,44 @@ int main(void)
 			}
 		printf("channel %2d: %s\n", i+1, buf_descr);
 	}
+
+	//读取ch01的歌曲数据，存入当前文件下的tmp.mp3文件中
+	printf("*******************************test03***********************************\n");
+	fd = open("./tmp.mp3", O_RDWR | O_CREAT | O_TRUNC, 0664);
+	if(fd < 0){
+		perror("open tmp.mp3");	
+		return -1;
+	}
+
+	while(1){
+		ret = readchnsong( 2, buf_song, DESCRSIZE);
+		if(ret < 0){
+			perror("readchnsong()");
+			return -1;
+		}
+		
+		if(write(fd, buf_song, ret) < 0){
+			perror("write()");
+			return -1;
+		}
+
+		if(ret >= 0 && ret < DESCRSIZE){
+			//break;	//读取一首歌
+			printf("一首歌读取完成\n");
+			sleep(2);
+			printf("3秒后开始下一首\n");
+			printf("3\n");
+			sleep(1);
+			printf("2\n");
+			sleep(1);
+			printf("1\n");
+			sleep(1);
+			printf("start\n");
+			continue;	//一直循环顺序读取
+		}
+		
+	}
+	close(fd);
 
 	return 0;
 }
@@ -263,8 +311,64 @@ err_path:
 	return -1;
 }
 
+
 int readchnsong(int chnid ,void *buf, size_t count)
 {
+	int chn_index, song_index, song_pos;
+	int i, j;
+	int ret;
+	int fd;
+	char cur_songpath[DESCRSIZE] = {};
+	char buf_song[DESCRSIZE] = {};
+	
+	//将要read的位置
+	chn_index  = chnid - 1;		//当前频道
+	song_index = (cur_pos[chn_index]).songid;	//当前mp3文件
+	song_pos   = (cur_pos[chn_index]).pos; 		//当前mp3文件中的位置
+	
+	//当前mp3文件path
+	memset(cur_songpath, '\0', DESCRSIZE);
+	strcpy(cur_songpath, (((chnpathnames[chn_index]).songpathnames)[song_index]).songpathname);
+
+	//open
+	fd = open(cur_songpath, O_RDONLY);
+	if(fd < 0){
+		perror("open mp3 file:");	
+		return -1;
+	}
+	lseek(fd, song_pos, SEEK_SET);
+	
+	//read
+	memset(buf_song, '\0', DESCRSIZE);
+	ret = read( fd, buf_song, count);
+	if(ret < 0){
+		perror("read mp3 file:");	
+		return -1;
+	}
+	
+	//如果当前mp3文件读完了
+	if(ret >= 0 && ret < count){
+		(cur_pos[chn_index]).songid ++;
+		if((cur_pos[chn_index]).songid >= (chnpathnames[chn_index]).songnum){
+			(cur_pos[chn_index]).songid = 0;
+		}
+	
+		(cur_pos[chn_index]).pos = 0;
+
+		goto endjob;
+	}
+	
+	//如果当前mp3文件没有读完
+	(cur_pos[chn_index]).pos = lseek( fd, 0, SEEK_CUR);
+	
+endjob:
+	//回添
+	memcpy(buf, buf_song, ret);
+
+	//close
+	close(fd);
+
+	return ret;
 
 }
 
