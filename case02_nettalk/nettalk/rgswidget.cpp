@@ -79,4 +79,5 @@ void RgsWidget::on_countPushButton_clicked()
 	socket->writeDatagram((const char *)&buf, sizeof(buf), \
 						  QHostAddress(QString(RGS_SERVER_IP)), \
 						  RGS_SERVER_PORT);
+	qDebug()<<"rgs server ip:"<<RGS_SERVER_IP;
 }

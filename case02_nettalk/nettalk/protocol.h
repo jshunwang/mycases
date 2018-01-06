@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 
-#define DEFAULT_SERVER_IP  "172.25.2.122"
+#define DEFAULT_SERVER_IP  "172.25.0.110"
 
 #define BUFSIZE			    256
 

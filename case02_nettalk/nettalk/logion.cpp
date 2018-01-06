@@ -93,5 +93,6 @@ void LogIon::on_loginPushButton_clicked()
 						  QHostAddress(QString(LOGIN_SERVER_IP)), \
 						  LOGIN_SERVER_PORT);
 
+	qDebug()<<"login server ip:"<<RGS_SERVER_IP;
 }
 

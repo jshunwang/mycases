@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 	//创建一个table用于加入在线成员
 	//监察和删除在线成员在chat服务端进行
 	sql = "create table if not exists onlineTable(id integer primary key autoincrement not null,\
-		   count text not null)";
+		   count text not null, addr blob not null)";
 	if (sqlite3_exec(db, sql, NULL, NULL, &errmsg) != SQLITE_OK) {
 		fprintf(stderr, "sqlite3_exec():%s\n", errmsg);	
 		goto ERROR2;
@@ -107,17 +107,19 @@ static int login_handler(const struct login_st *rcv)
 {
 	char *sql = NULL;
 	char *sql2 = NULL;
+	char *sql3 = NULL;
 	char arr[128] = {};
 	char arr2[128] = {};
 	sqlite3_stmt *stmt = NULL;
 	sqlite3_stmt *stmt2 = NULL;
-	int ret, ret2;
+	sqlite3_stmt *stmt3 = NULL;
+	int ret, ret2, ret3;
 
 	//查找rgsTable中是否有rcv->count用户
 	sql = "select * from rgsTable where count=?";
 	if (sqlite3_prepare_v2(db, sql, -1, &stmt, NULL) != SQLITE_OK) {
 		fprintf(stderr, "sqlite3_stmt() failed\n");
-		return -1;
+		return -3;
 	}
 	sqlite3_bind_text(stmt, 1, rcv->count, -1, NULL);	
 	/*
@@ -138,7 +140,7 @@ static int login_handler(const struct login_st *rcv)
 		sql2 = "select * from rgsTable where count=? and passwd=?";
 		if (sqlite3_prepare_v2(db, sql2, -1, &stmt2, NULL) != SQLITE_OK) {
 			fprintf(stderr, "sqlite3_stmt() failed\n");
-			return -1;
+			return -3;
 		}
 		sqlite3_bind_text(stmt2, 1, rcv->count, -1, NULL);	
 		sqlite3_bind_text(stmt2, 2, rcv->passwd, -1, NULL);	
@@ -147,13 +149,32 @@ static int login_handler(const struct login_st *rcv)
 		//判断密码
 		if(ret2	== SQLITE_ROW && ret2 != SQLITE_DONE){
 			//密码正确
-			memset(arr2, '\0', 128);
-			snprintf(arr2, 128, "insert into onlineTable(count) values('%s')",\
-					rcv->count);
-			if (sqlite3_exec(db, arr2, NULL, NULL, NULL) != SQLITE_OK) {
-				fprintf(stderr, "[%s][%d]sqlite3_exec() failed\n", __FUNCTION__, __LINE__);
+				//遍历登陆表检测是否已经登陆,重复登陆返回-2
+			sql3 = "select * from onlineTable where count=?";
+			if(sqlite3_prepare_v2(db, sql3, -1,&stmt3, NULL) != SQLITE_OK){
+				fprintf(stderr,"[%d]: %s error\n",__LINE__,"sqlite3_prepare_v2");	
+				retrun -3;
+			}
+			sqlite3_bind_text(stmt3, 1,rcv->count, -1, NULL);
+			ret3 = sqlite3_step(stmt3); 
+			if(ret3 != SQLITE_DONE && ret != SQLITE_ROW){
+				fprintf(stderr,"[%d]: %s error\n",__LINE__,"sqlite3_step()");	
+				sqlite3_finalize(stmt3);
 				return -3;
 			}
+
+			if(ret3 != SQLITE_ROW){
+				sql3 = "insert into onlineTable(addr, count) values(?,?)";
+			}else{
+				sql3 = "update onlineTable set addr=? where count=?";
+			}
+			if(sqlite3_prepare_v2(db, sql3, -1, &stmt3, NULL) != SQLITE_OK){
+				fprintf(stderr,"[%d]: %s error\n",__LINE__,"sqlite3_prepare()");	
+				return -3;
+			}
+			sqlite3_bind_blob(stmt3, 1, raddr, sizeof(struct sockaddr_in), NULL);
+			sqlite3_bind_text(stmt3, 2, rcv->count, -1, NULL);
+
 
 			sqlite3_finalize(stmt2);
 			sqlite3_finalize(stmt);
