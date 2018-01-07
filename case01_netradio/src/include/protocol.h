@@ -23,7 +23,7 @@ typedef uint8_t chnid_t;
 #define MINCHNID			 1				//最小广播频道id
 #define MAXCHNID			 (MAXCHNNR+MINCHNID-1)	//最大广播频道id
 #define CHNLISTID			 0				//频道列表信息id
-#define MAXMSGSIZE 			 512			//单次网络传输字节数目（总数）
+#define MAXMSGSIZE 			 514			//单次网络传输字节数目（总数）
 #define RSONGSIZE 		 	 510			//试图读取歌曲文件字节数目
 #define MAXDESCR			 510			//描述说明信息最大字节个数
 #define RDESCRSIZE			 510			//试图读取一个频道信息文件的字节个数
@@ -31,13 +31,15 @@ typedef uint8_t chnid_t;
 //频道内歌曲数据,因为MP3是流式文件，不需要结束标志，按循环顺序传输即可
 struct chnmst_st {
 	chnid_t chnid;	//标记频道所属
+	chnid_t	nothing;//仅仅是为了对其，这个成员没有用
 	short	len; 	//标记valid信息长度
 	char msg[510];	//固定传输长读510个字节数据信息，包含valid信息和'\0'
 }__attribute__((packed));
 
 //一个频道的描述信息，用len=0,descr=NULL，做为最后结束的标志
 struct chninfo_st{
-	chnid_t chnid;
+	chnid_t chnid;	//0表示是频道信息
+	chnid_t chnid_chn; //表示描述信息所属的频道id
 	short 	len;
 	char descr[510];
 }__attribute__((packed));
